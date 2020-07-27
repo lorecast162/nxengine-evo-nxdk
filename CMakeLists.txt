@@ -7,6 +7,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 option(LOW_END_HARDWARE "Build for low-end hardware" OFF)
 set(PLATFORM "pc" CACHE STRING "Platform to build for")
 set_property(CACHE PLATFORM PROPERTY STRINGS pc vita switch)
+set(CMAKE_CXX_STANDARD 11)
 
 IF(PLATFORM STREQUAL "pc")
 ELSEIF(PLATFORM STREQUAL "vita")
@@ -30,6 +31,19 @@ ELSEIF(PLATFORM STREQUAL "switch")
         message(FATAL_ERROR "Please define DEVKITPRO to point to your SDK path!")
     ENDIF()
 
+ELSEIF(PLATFORM STREQUAL "nxdk")
+	set(LOW_END_HARDWARE ON)
+
+	set(SDL_MIXER_LIBRARY "/opt/nxdk-jfr/lib/libSDL_mixer.lib")
+	set(SDL_MIXER_INCLUDE_DIR "/opt/nxdk-jfr/lib/sdl/SDL_mixer/include")
+
+	set(ZLIB_INCLUDE_DIR "/opt/nxdk-jfr/lib/zlib/zlib")
+	set(ZLIB_LIBRARY "/opt/nxdk-jfr/lib/libzlib.lib")
+
+	set(PNG_INCLUDE_DIR "/opt/nxdk-jfr/lib/libpng/libpng")
+	set(PNG_PNG_INCLUDE_DIR "/opt/nxdk-jfr/lib/libpng/libpng")
+	set(PNG_LIBRARY "/opt/nxdk-jfr/lib/libpng.lib")
+
 ELSE()
     message(FATAL_ERROR "Wrong platform")
 ENDIF()
@@ -42,7 +56,9 @@ set (nx_VERSION_RELEASE 4)
 
 find_package(SDL2 REQUIRED)
 find_package(SDL2_mixer REQUIRED)
-find_package(PNG REQUIRED)
+IF( NOT PLATFORM STREQUAL "nxdk")
+	find_package(PNG REQUIRED)
+ENDIF()
 
 include_directories(${SDL2_INCLUDE_DIR})
 include_directories(${SDL_MIXER_INCLUDE_DIR})
@@ -105,6 +121,12 @@ add_executable(nx ${SOURCES})
 IF(PLATFORM STREQUAL "pc")
     add_definitions("-std=c++11")
     target_link_libraries(nx ${SDL2_LIBRARY} ${SDL_MIXER_LIBRARY} ${PNG_LIBRARY})
+
+ELSEIF(PLATFORM STREQUAL "nxdk")
+	add_definitions("-DSPDLOG_DEBUG")
+	add_definitions("-D_WIN32")
+	target_link_libraries(nx SDL2::SDL2 ${SDL_MIXER_LIBRARY} ${PNG_LIBRARY})
+	include_directories("nxdk/")
 
 ELSEIF(PLATFORM STREQUAL "vita")
     add_definitions("-std=gnu++11")
